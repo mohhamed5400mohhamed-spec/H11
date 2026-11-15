@@ -99,6 +99,7 @@ export interface User {
   avatarUrl?: string;
   statusQuote: string;
   flag: string;
+  memberNumber?: number;
   role: 'admin' | 'super' | 'member' | 'guest' | string;
   likes: number;
   points: number;
@@ -185,6 +186,7 @@ export interface Message {
     giftMessage?: string;
   };
   flag?: string;
+  memberNumber?: number;
   badge?: string;
   badgeColor?: string;
   text: string;

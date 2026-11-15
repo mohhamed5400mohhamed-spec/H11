@@ -480,6 +480,7 @@ export interface StoredMessage {
   avatarUrl?: string;
   nameBannerUrl?: string;
   flag?: string;
+  memberNumber?: number;
   badge?: string;
   badgeColor?: string;
   text: string;
@@ -526,6 +527,7 @@ export interface ConnectedUser {
   avatarUrl?: string;
   statusQuote: string;
   flag: string;
+  memberNumber?: number;
   role: 'hassan' | 'admin' | 'super' | 'member' | 'guest' | string;
   likes: number;
   points: number;
@@ -2597,6 +2599,7 @@ export interface RegisteredMemberInfo {
   displayName?: string; // الزخرفة واسم العرض القابل للتعديل من الضبط بينما يبقى اسم التسجيل الأصلي ثابتاً للدخول
   role: 'hassan' | 'admin' | 'super' | 'member' | 'guest' | string;
   flag: string;
+  memberNumber?: number;
   statusQuote: string;
   avatarUrl?: string;
   likes: number;
@@ -2656,6 +2659,33 @@ const registeredMembers: Record<string, RegisteredMemberInfo> = {
     }
   }
 };
+
+export function assignPermanentMemberNumbers() {
+  const flagGroups = new Map<string, Array<{ username: string; member: RegisteredMemberInfo }>>();
+  for (const [username, member] of Object.entries(registeredMembers)) {
+    if (!member) continue;
+    const flag = String(member.flag || '🇸🇦').trim();
+    if (!flagGroups.has(flag)) {
+      flagGroups.set(flag, []);
+    }
+    flagGroups.get(flag)!.push({ username, member });
+  }
+
+  let changed = false;
+  for (const [flag, group] of flagGroups.entries()) {
+    group.sort((a, b) => a.username.localeCompare(b.username));
+    group.forEach((item, index) => {
+      const expectedNum = index + 1;
+      if (item.member.memberNumber !== expectedNum) {
+        item.member.memberNumber = expectedNum;
+        changed = true;
+      }
+    });
+  }
+  if (changed) {
+    saveMembers();
+  }
+}
 
 export function getRegisteredMember(username?: string): { key: string; member: RegisteredMemberInfo } | null {
   if (!username) return null;
@@ -3350,6 +3380,9 @@ try {
     saveMembers();
     console.log('[Security] ✅ Automated migration: Upgraded stored passwords to secure bcrypt hashes.');
   }
+
+  // Assign permanent fixed member numbers per flag
+  assignPermanentMemberNumbers();
 
   // Re-hydrate in-memory IP, accounts and device mappings from persistent storage
   for (const [username, m] of Object.entries(registeredMembers)) {

@@ -21,7 +21,7 @@ export const DEFAULT_BOT_SETTINGS = {
   smartQaEnabled: true,
   welcomeEnabled: true,
   delayedReplyEnabled: true,
-  replyDelaySeconds: 2,
+  replyDelaySeconds: 1,
   hopMode: 'random', // 'random' | 'selected'
   hopIntervalMinutes: 5,
   selectedHopRooms: []
@@ -132,7 +132,7 @@ export function createBotEngine(ctx) {
   const welcomeCooldowns = new Map(); // `${botId}::${lowerUser}` -> timestamp (5 min)
   const replyCooldowns = new Map(); // `${botId}::${lowerUser}::${keywordKey}` -> timestamp
   const activeConversations = new Map(); // `${roomId}::${lowerSender}` -> { botId, updatedAt }
-  const ACTIVE_CONVERSATION_TTL_MS = 10 * 60 * 1000; // 10 minutes follow-up window persisted in MongoDB
+  const ACTIVE_CONVERSATION_TTL_MS = 30 * 60 * 1000; // 30 minutes follow-up window persisted in MongoDB
 
   let stateChangeListeners = new Set();
 
@@ -864,6 +864,24 @@ export function createBotEngine(ctx) {
       };
     }
 
+    // 3. Auto-Engagement: If no active conversation exists, but bots are active in the room, 
+    // automatically engage with the first active bot so the bot converses and follows along naturally without requiring name mention!
+    const nowAuto = Date.now();
+    if (!messageMentionsOtherHumanInRoom(candidates, roomId, sender.id) && enabledBots.length > 0) {
+      const defaultTarget = enabledBots[0];
+      if (defaultTarget) {
+        activeConversations.set(convKey, { botId: defaultTarget.botRecord.id, updatedAt: nowAuto });
+        saveBotConversations();
+        return {
+          botUser: defaultTarget.botUser,
+          botRecord: defaultTarget.botRecord,
+          questionText: candidates[0]?.raw || '',
+          explicitMention: false,
+          isFollowUp: true
+        };
+      }
+    }
+
     return null;
   }
 
@@ -1134,7 +1152,7 @@ export function createBotEngine(ctx) {
     const lowerSender = String(sender.username || '').trim().toLowerCase();
     const senderDisplay = sender.displayName || sender.username;
     const pmKey = `${botRecord.id}::pm::${lowerSender}`;
-    if (now - (replyCooldowns.get(pmKey) || 0) < 1000) {
+    if (now - (replyCooldowns.get(pmKey) || 0) < 300) {
       return true;
     }
     replyCooldowns.set(pmKey, now);
@@ -1280,12 +1298,10 @@ export function createBotEngine(ctx) {
           return;
         }
 
-        console.error(`[BotAI][PM] Failed for bot "${latestBot.username}" (${aiRes.errorCode}): ${aiRes.errorMessage}`);
-        const userFacingErr =
-          aiRes.errorCode === 'NO_API_KEY' || aiRes.errorCode === 'API_KEY_INVALID' || aiRes.errorCode === 'PERMISSION_DENIED'
-            ? `أهلاً يا ${senderDisplay} 🌹 ميزة الإجابة الذكية تحتاج إلى تفعيل مفتاح Gemini API في إعدادات الخادم، لكن يمكنك إرسال التحيات والأوامر الجاهزة حالياً.`
-            : `عذراً يا ${senderDisplay}، تعذر الحصول على رد ذكي الآن، حاول مرة أخرى بعد قليل 🌹`;
-        sendBotPrivateMessage(latestBot, sender, userFacingErr);
+        const conversationalFallback = `أهلاً بك يا ${senderDisplay} 🌹 وصلني كلامك "${questionText}"، وأنا معك هنا في الخاص ومستعد للحديث معك والرد على كل ما تطرحه بكل ترحيب!`;
+        recordBotTurnInMemory(latestBot.id, sender.username, questionText, conversationalFallback);
+        saveBotConversations();
+        sendBotPrivateMessage(latestBot, sender, conversationalFallback);
       })().catch((err) => {
         console.error('[BotAI][PM] Unhandled async error:', err);
         stopTypingIfOnline();

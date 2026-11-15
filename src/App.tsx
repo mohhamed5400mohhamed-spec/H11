@@ -11843,10 +11843,15 @@ export default function App() {
                           </button>
                         )}
                         <span
-                          className="text-lg leading-none select-none"
+                          className="inline-flex flex-col items-center leading-none select-none"
                           title={getCountryNameFromFlag(u.flag) || undefined}
                         >
-                          {u.flag}
+                          <span className="text-lg leading-none">{u.flag || '🇸🇦'}</span>
+                          {u.memberNumber && (
+                            <span className="text-[9px] text-amber-400 font-black leading-none mt-0.5">
+                              #{u.memberNumber}
+                            </span>
+                          )}
                         </span>
                       </div>
                     </div>
@@ -11965,10 +11970,15 @@ export default function App() {
                             </button>
                           )}
                           <span
-                            className="text-base leading-none select-none"
+                            className="inline-flex flex-col items-center leading-none select-none"
                             title={getCountryNameFromFlag(u.flag) || undefined}
                           >
-                            {u.flag}
+                            <span className="text-base leading-none">{u.flag || '🇸🇦'}</span>
+                            {u.memberNumber && (
+                              <span className="text-[9px] text-amber-400 font-black leading-none mt-0.5">
+                                #{u.memberNumber}
+                              </span>
+                            )}
                           </span>
                         </div>
                       </div>
@@ -12086,10 +12096,15 @@ export default function App() {
                           </button>
                         )}
                         <span
-                          className="text-base leading-none select-none"
+                          className="inline-flex flex-col items-center leading-none select-none"
                           title={getCountryNameFromFlag(u.flag) || undefined}
                         >
-                          {u.flag}
+                          <span className="text-base leading-none">{u.flag || '🇸🇦'}</span>
+                          {u.memberNumber && (
+                            <span className="text-[9px] text-amber-400 font-black leading-none mt-0.5">
+                              #{u.memberNumber}
+                            </span>
+                          )}
                         </span>
                       </div>
                     </div>

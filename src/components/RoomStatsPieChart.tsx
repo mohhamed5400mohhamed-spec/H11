@@ -21,6 +21,7 @@ export interface RoomStatUser {
   username: string;
   role: 'admin' | 'super' | 'member' | 'guest';
   flag: string;
+  memberNumber?: number;
   avatarUrl?: string;
   isVoice: boolean;
   micSlot: number | null;
@@ -656,7 +657,12 @@ export const RoomStatsPieChart: React.FC<RoomStatsPieChartProps> = ({
                             <div className="min-w-0 flex-1">
                               <div className="text-[11px] font-bold text-slate-800 truncate flex items-center gap-1">
                                 <span className="truncate">{u.username}</span>
-                                {u.flag && <span className="text-[10px]">{u.flag}</span>}
+                                {u.flag && (
+                                  <span className="inline-flex flex-col items-center leading-none">
+                                    <span className="text-[10px]">{u.flag}</span>
+                                    {u.memberNumber && <span className="text-[8px] text-amber-600 font-black">#{u.memberNumber}</span>}
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-1 text-[9px] text-slate-500">
                                 <span>{u.role === 'admin' ? 'إدارة 👑' : u.role === 'super' ? 'سوبر 🛡️' : 'عضو'}</span>
